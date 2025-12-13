@@ -1,0 +1,18 @@
+{
+  "profiles": {
+    "power-position-tracker": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    },
+    "power-position-tracker (Custom Runtime)": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+        }
+       }
+     }
+   }
