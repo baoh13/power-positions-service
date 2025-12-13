@@ -43,6 +43,12 @@
         /// <summary>
         /// Delay in seconds between retry attempts (default: 10)
         /// </summary>
-        public int RetryDelaySeconds { get; set; } = 10;        
+        public int RetryDelaySeconds { get; set; } = 10;
+
+        /// <summary>
+        /// Maximum total retry attempts including DLQ processing (default: 5)
+        /// After this limit, extraction requires human intervention
+        /// </summary>
+        public int MaxDlqRetryAttempts { get; set; } = 5;
     }
 }
