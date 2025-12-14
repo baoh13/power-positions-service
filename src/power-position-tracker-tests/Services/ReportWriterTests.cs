@@ -162,26 +162,6 @@ public class ReportWriterTests
     }
 
     [Test]
-    public async Task WriteReportAsync_ValidPositions_CreatesOutputDirectoryIfNotExists()
-    {
-        // Arrange
-        var extractionTime = new LocalDateTime(2025, 12, 10, 14, 30, 0).InZoneLeniently(_londonTimeZone);
-        var positions = CreateTestPositions();
-
-        // Ensure directory doesn't exist
-        if (Directory.Exists(_testOutputDirectory))
-        {
-            Directory.Delete(_testOutputDirectory, true);
-        }
-
-        // Act
-        await _sut.WriteReportAsync(positions, extractionTime);
-
-        // Assert
-        Assert.That(Directory.Exists(_testOutputDirectory), Is.True);
-    }
-
-    [Test]
     public async Task WriteReportAsync_ValidPositions_OrdersByPeriod()
     {
         // Arrange

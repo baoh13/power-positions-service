@@ -20,6 +20,7 @@ namespace power_position_tracker_integration_tests;
 /// Uses real PowerService.dll instead of mocks
 /// </summary>
 [TestFixture]
+[NonParallelizable]
 public class PowerPositionWorkerTests
 {
     private string _testOutputDirectory = string.Empty;
@@ -487,7 +488,6 @@ public class PowerPositionWorkerTests
         };
 
         var host = Host.CreateDefaultBuilder()
-            .ConfigureLogging(APPNAME, skipLogging: true)
             .RegisterServices()
             .ConfigureAppConfiguration(c => c.AddInMemoryCollection(configValues!))
             .ConfigureServices(svc =>

@@ -27,6 +27,11 @@ public class ReportWriter : IReportWriter, IDisposable
 
         if (string.IsNullOrWhiteSpace(_settings.OutputDirectory))
             throw new ArgumentException("Output directory is required.");
+
+        // Create directory once during initialization
+        Directory.CreateDirectory(_settings.OutputDirectory);
+        
+        _logger.LogInformation("Output directory initialized: {OutputDirectory}", _settings.OutputDirectory);
     }
 
     /// <inheritdoc/>
@@ -57,8 +62,6 @@ public class ReportWriter : IReportWriter, IDisposable
 
         try
         {
-            Directory.CreateDirectory(_settings.OutputDirectory);
-
             var csv = BuildCsvContent(positionList);
 
             await File.WriteAllTextAsync(filePath, csv, Encoding.UTF8, cancellationToken);
@@ -70,11 +73,6 @@ public class ReportWriter : IReportWriter, IDisposable
                                     csv.Length);
 
             return filePath;
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogWarning("Report writing was cancelled for file: {FilePath}", filePath);
-            throw;
         }
         catch (Exception ex)
         {
@@ -99,21 +97,12 @@ public class ReportWriter : IReportWriter, IDisposable
         _disposed = true;
     }
 
-    private string BuildCsvContent(IEnumerable<AggregatedPosition> positionList)
+    private static string BuildCsvContent(IEnumerable<AggregatedPosition> positions)
     {
-        var sb = new StringBuilder();
-
-        // Header row
-        sb.AppendLine("LocalTime,Volume");
-
-        // Data rows ordered by Period (1-24)
-        // Period 1 = 23:00 previous day, Period 2 = 00:00, ..., Period 24 = 22:00
-        foreach (var position in positionList.OrderBy(p => p.period))
-        {
-            // Format: HH:mm,Volume - 23:00,150.50
-            sb.AppendLine($"{position.localTime:HH:mm},{position.volume:F2}");
-        }
-
-        return sb.ToString();
+        var lines = positions
+            .OrderBy(p => p.Period)
+            .Select(p => $"{p.LocalTime},{p.Volume:F2}");
+        
+        return "LocalTime,Volume" + Environment.NewLine + string.Join(Environment.NewLine, lines);
     }
 }

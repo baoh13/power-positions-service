@@ -47,7 +47,6 @@ public class PowerPositionWorkerTests
             RunTime = null,
             RetryAttempts = 3,
             RetryDelaySeconds = 1, // Use 1 second for tests
-            MaxDlqRetryAttempts = 9
         };
 
         _options = Options.Create(_settings);

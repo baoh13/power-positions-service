@@ -13,13 +13,10 @@ public class PositionAggregator : IPositionAggregator
 
     public PositionAggregator(
         ILocalTimeProvider localTimeProvider,
-        ILogger<PositionAggregator> logger,
-        IOptions<PowerPositionSettings> settings)
+        ILogger<PositionAggregator> logger)
     {
-        _localTimeProvider = localTimeProvider;
-        _logger = logger;
-
-        _logger.LogInformation($"PositionAggregator initialized with timezone: {_localTimeProvider.TimeZone.Id}");
+        _localTimeProvider = localTimeProvider ?? throw new ArgumentNullException(nameof(localTimeProvider));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     /// <inheritdoc/>
@@ -36,10 +33,12 @@ public class PositionAggregator : IPositionAggregator
         var allPeriods = trades.SelectMany(t => t.Periods).ToList();
         var periodCount = allPeriods.Count;
 
-        if (periodCount % 24 != 0)
+        if (periodCount == 0 || periodCount % 24 != 0)
         {
-            _logger.LogError($"Invalid total period count: {allPeriods.Count}. Expected 24 periods from trades for target date: {targetDate.ToString(Constants.AuditDateFormat, null)}");
-            throw new InvalidOperationException($"Expected 24 periods from trades, but found {allPeriods.Count} periods.");
+            var tradeCount = periodCount / 24.0;
+            _logger.LogError($"Invalid total period count: {allPeriods.Count} for target date: {targetDate.ToString(Constants.AuditDateFormat, null)}");
+            throw new InvalidOperationException(
+                $"Expected period count to be a multiple of 24, but found {allPeriods.Count} periods ({tradeCount:F1} trades).");
         }
 
         _logger.LogInformation($"Total periods retrieved: {allPeriods.Count}");
@@ -50,7 +49,6 @@ public class PositionAggregator : IPositionAggregator
                                             .OrderBy(p => p.Period)
                                             .ToList();
 
-        // targetDate is already London LocalDate - no conversion needed
         var tradingDayStart = _localTimeProvider.GetTradingDayStart(targetDate);
 
         _logger.LogInformation($"Trading day starts at: {tradingDayStart} (Period 1 = 23:00 on {targetDate.PlusDays(-1)})");

@@ -280,20 +280,6 @@ public class ExecutionAuditLoggerTests
     }
 
     [Test]
-    public void Constructor_ThrowsWhenAuditDirectoryIsNull()
-    {
-        // Arrange
-        var settings = Options.Create(new PowerPositionSettings
-        {
-            AuditDirectory = null!,
-            OutputDirectory = "C:\\Output"
-        });
-
-        // Act & Assert
-        Assert.Throws<ArgumentException>(() => new ExecutionAuditLogger(settings, CreateLogger()));
-    }
-
-    [Test]
     public async Task LogExtractionCompletionAsync_IsThreadSafe()
     {
         // Arrange

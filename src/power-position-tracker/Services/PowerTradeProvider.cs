@@ -15,8 +15,8 @@ namespace power_position_tracker.Services
 
         public PowerTradeProvider(IPowerService powerService, ILogger<PowerTradeProvider> logger)
         {
-            _logger = logger;
-            _powerService = powerService;           
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _powerService = powerService ?? throw new ArgumentNullException(nameof(powerService));           
         }
 
         /// <summary>

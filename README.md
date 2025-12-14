@@ -13,21 +13,43 @@ The Power Position Tracker service:
 - **Maintains** comprehensive audit logs and dead letter queue for failed extractions
 - **Handles** BST/GMT timezone transitions accurately using NodaTime
 
-### Intra-Day Snapshot Behavior
+## Execution Flow
 
-The service creates **progressive snapshots** as traders book new positions. For example, on December 10, 2025:
-- **01:05** extraction → `PowerPosition_20251210_0105.csv` (early morning positions)
-- **06:05** extraction → `PowerPosition_20251210_0605.csv` (more complete data)
-- **14:05** extraction → `PowerPosition_20251210_1405.csv` (near-complete positions)
+**On Startup (ExecuteAsync):**
+1. Service initializes as BackgroundService with configured settings
+2. Process Dead Letter Queue (DLQ) - retry all previously failed extractions
+   - Each DLQ item is retried with `RunSingleExtractionAsync()`
+   - Successful recoveries are removed from DLQ
+   - Failed retries are re-queued with incremented retry count
+3. Run initial extraction immediately (before first interval timer)
 
-Each snapshot queries `PowerService.GetTradesAsync()` with the same date but receives increasingly complete data as the trading day progresses.
+**Periodic Extraction Loop:**
+4. Wait for next scheduled interval (default: 5 minutes)
+5. Execute `RunExtractionWithRetryAsync()`:
+   - Determine target date from runtime config
+   - Attempt extraction up to 3 times with 10-second delays
+   - On success: exit and wait for next interval
+   - On failure: add to DLQ and wait for next interval
+6. Repeat steps 4-5 until service shutdown
 
-## Prerequisites
+**Service never crashes** - exceptions are caught, logged, and processing continues
 
-- **.NET 9 SDK** or later
-- **Windows OS** (designed for Windows Service deployment, but can run on other platforms for development)
-- **PowerService.dll** (located in `src/power-position-tracker/docs/`)
-- Write permissions for output directories
+
+## RunExtractionWithRetryAsync Method
+1. Determine extraction target date based on runtime context (DOTNET_RUNTIME env var → config → DateTime.UtcNow)
+2. Convert extraction time from UTC to London Local Time
+3. Loop through retry attempts (default: 3 attempts)
+   - Call `RunSingleExtractionAsync()` for each attempt
+   - If successful, exit immediately
+   - If failed and more attempts remain, wait for retry delay (default: 10 seconds)
+4. If all retry attempts exhausted, create DLQ entry for later recovery
+
+## RunSingleExtractionAsync Method
+1. Retrieve power trades from PowerService API for target date
+2. Aggregate positions by hour (validates 24 periods)
+3. Write CSV report to OutputDirectory
+4. Determine status (Done, RecoveredFromDLQ, RetryAttempt, Failed, Cancelled)
+5. Log audit record with extraction details (always runs in finally block) 
 
 ## Quick Start
 
@@ -95,56 +117,20 @@ dotnet test
 
 The `local-startup.ps1` script provides a streamlined development experience with:
 
-### Features
-- **Directory Setup**: Automatically creates required output directories if missing
-- **Permission Validation**: Checks write permissions before starting
-- **Configuration Validation**: Validates `appsettings.json` settings
-- **Clean Logs**: Optional cleanup of old output/audit files
-- **Environment Override**: Supports runtime override via `DOTNET_RUNTIME` environment variable
-
 ### Usage
 
 ```powershell
 # Basic usage - starts service with validation
 .\scripts\local-startup.ps1
 
-# With cleanup of previous runs
-.\scripts\local-startup.ps1 -CleanLogs
-
 # With specific runtime override (for testing/debugging)
 .\scripts\local-startup.ps1 -RuntimeOverride "2025-12-10T14:30:00Z"
 
-# Validate configuration only (no service start)
-.\scripts\local-startup.ps1 -ValidateOnly
 ```
 
-### Parameters
 
-| Parameter | Description | Example |
-|-----------|-------------|---------|
-| `-CleanLogs` | Deletes all files in Output, Audit, and DLQ directories before starting | `.\local-startup.ps1 -CleanLogs` |
-| `-RuntimeOverride` | Sets `DOTNET_RUNTIME` environment variable for testing specific extraction times | `.\local-startup.ps1 -RuntimeOverride "2025-12-10T14:30:00Z"` |
-| `-ValidateOnly` | Validates configuration and permissions without running the service | `.\local-startup.ps1 -ValidateOnly` |
 
-### What It Does
 
-1. **Validates Environment**
-   - Checks .NET SDK installation
-   - Verifies PowerService.dll exists
-   - Validates `appsettings.json` syntax
-
-2. **Prepares Directories**
-   - Creates Output, Audit, and DLQ directories
-   - Validates write permissions
-   - Optionally cleans old files
-
-3. **Sets Runtime Context**
-   - Applies runtime override if specified
-   - Displays effective configuration
-
-4. **Starts Service**
-   - Runs `dotnet run` from correct directory
-   - Displays real-time logs
 
 ## Configuration
 
@@ -160,8 +146,7 @@ The `local-startup.ps1` script provides a streamlined development experience wit
     "TimeZoneId": "Europe/London",      // BST/GMT aware
     "RunTime": null,                    // null = current time
     "RetryAttempts": 3,
-    "RetryDelaySeconds": 20,
-    "MaxDlqRetryAttempts": 9
+    "RetryDelaySeconds": 10,
   },
   "Serilog": {
     "MinimumLevel": "Information"
@@ -188,6 +173,11 @@ $env:DOTNET_RUNTIME = $null
 
 ## Output Files
 
+'src/power-position-tracker/docs/' contains three key directories:
+ - `Output` - Business CSV reports
+ - `Audit` - Execution audit logs
+ - `Dlq` - Dead letter queue for failed extractions
+
 ### Business Reports (`OutputDirectory`)
 
 **Format**: `PowerPosition_YYYYMMDD_HHMM.csv`
@@ -210,7 +200,7 @@ LocalTime,Volume
 
 ```csv
 ExtractionTime,TargetDate,Status,RetryCount,ErrorMessage,FilePath
-2025-12-10T14:05:00Z,2025-12-10,Success,0,,C:\PowerReports\Output\PowerPosition_20251210_1405.csv
+2025-12-10T14:05:00Z,2025-12-10,Success,0,,src/power-position-tracker/docs/Output/PowerPosition_20251210_1405.csv
 2025-12-10T14:10:00Z,2025-12-10,Failed,3,Connection timeout,
 ```
 
@@ -250,6 +240,8 @@ dotnet test --logger "console;verbosity=detailed"
 - `PowerTradeProviderTests` - API interaction and retry logic
 - `PositionAggregatorTests` - Hourly aggregation logic
 - `ReportWriterTests` - CSV file generation
+- `PowerPositionWorkerTests` - Core extraction workflow
+- `PositionAggregatorTests` - Hourly aggregation logic
 
 ### Integration Tests
 
@@ -280,16 +272,6 @@ dotnet test --logger "console;verbosity=detailed"
 3. **DLQ Processing** - Continue on individual failures
 4. **File I/O** - Fallback logging mechanisms
 5. **Startup Validation** - Fail fast on configuration errors
-
-### BST/DST Validation
-
-```csharp
-if (periods.Count != 24) {
-    throw new InvalidOperationException(
-        $"PowerService returned {periods.Count} periods instead of 24"
-    );
-}
-```
 
 ### Directory Separation
 
@@ -324,13 +306,22 @@ Use the automated deployment script for local Kubernetes development:
 
 ```
 
-**What the script does:**
-1. Installs prerequisites (Chocolatey, Docker Desktop, Minikube, kubectl, Helm)
-2. Starts Minikube cluster with profile `power-position-dev`
-3. Builds Docker image and loads it into Minikube
-4. Creates required host path directories in Minikube node
-5. Deploys application using Helm chart
-6. Displays deployment status and useful commands
+
+**The script will automatically:**
+
+✅ Verify/install Chocolatey (if needed)
+✅ Verify/install Docker Desktop (if needed)
+✅ Verify/install Minikube (if needed)
+✅ Verify/install kubectl (if needed)
+✅ Verify/install Helm (if needed)
+✅ Create a fresh Minikube cluster with profile power-position-dev
+✅ Enable storage addons
+✅ Configure Docker to use Minikube's registry
+✅ Build the Docker image
+✅ Load image into Minikube
+✅ Create required directories
+✅ Deploy the Helm chart
+✅ Start the application
 
 **Useful post-deployment commands:**
 ```powershell
@@ -388,12 +379,4 @@ PowerPositionWorker (BackgroundService)
 - **NodaTime** - Accurate timezone handling (BST/GMT transitions)
 - **PowerService.dll** - External trading API (provided)
 
-## Contributing
-
-When adding features:
-1. Follow existing exception handling patterns (5 layers)
-2. Add unit tests with >80% coverage
-3. Update integration tests for workflow changes
-4. Document configuration changes in this README
-5. Test BST transition scenarios (March/October)
 

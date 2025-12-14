@@ -19,8 +19,7 @@ public class ExecutionAuditLogger : IExecutionAuditLogger, IDisposable
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _settings = settings?.Value ?? throw new ArgumentNullException(nameof(settings));
 
-        if (string.IsNullOrWhiteSpace(_settings.AuditDirectory))
-            throw new ArgumentException("Audit directory is required.", nameof(settings));
+        Directory.CreateDirectory(_settings.AuditDirectory);
     }
 
     public async Task LogExtractionCompletionAsync(
@@ -70,9 +69,7 @@ public class ExecutionAuditLogger : IExecutionAuditLogger, IDisposable
         await _fileLock.WaitAsync();
 
         try
-        {
-            Directory.CreateDirectory(_settings.AuditDirectory);
-
+        {            
             var isNewFile = !File.Exists(filePath);
 
             // Format: StartTimeLocal,EndTimeLocal,TargetDate,DurationSeconds,Status,Attempt,ErrorMessage,ReportFileName

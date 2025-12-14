@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using NodaTime;
 using power_position_tracker.Models;
 using power_position_tracker.Services.Interfaces;
-using Services;
 
 namespace power_position_tracker.Services
 {
@@ -336,8 +335,7 @@ namespace power_position_tracker.Services
                 catch(Exception ex)
                 {
                     _logger.LogError(
-                        status,
-                        $"Failed to log audit record for extraction targeting {{TargetDate:{Constants.AuditDateFormat}}} (Attempt {{Attempt}})",
+                        "Failed to log audit record for extraction targeting {TargetDate} (Attempt {Attempt})",
                         targetDate,
                         attempt);
 
