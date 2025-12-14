@@ -57,7 +57,7 @@ The Power Position Tracker service:
 
 ```powershell
 # Navigate to solution directory
-cd c:\ai\labs\power-position-tracker\src\power-position-tracker
+cd c:\power-position-tracker\src\power-position-tracker
 
 # Restore dependencies and build
 dotnet build
@@ -123,14 +123,7 @@ The `local-startup.ps1` script provides a streamlined development experience wit
 # Basic usage - starts service with validation
 .\scripts\local-startup.ps1
 
-# With specific runtime override (for testing/debugging)
-.\scripts\local-startup.ps1 -RuntimeOverride "2025-12-10T14:30:00Z"
-
 ```
-
-
-
-
 
 ## Configuration
 
@@ -339,28 +332,6 @@ minikube stop --profile=power-position-dev
 
 # SSH into Minikube node
 minikube ssh --profile=power-position-dev
-```
-
-## Troubleshooting
-
-### Service Won't Start
-
-```powershell
-# Validate configuration
-.\scripts\local-startup.ps1 -ValidateOnly
-
-# Check directory permissions
-Test-Path C:\PowerReports\Output -PathType Container
-```
-
-### Environment Variable Stuck
-
-```powershell
-# Clear runtime override
-$env:DOTNET_RUNTIME = $null
-
-# Verify cleared
-Get-ChildItem env:DOTNET_RUNTIME
 ```
 
 ## Architecture
