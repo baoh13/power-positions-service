@@ -78,7 +78,7 @@ storage:
 
 # Environment variables for runtime override
 env:
-  # POWER_POSITION_RUNTIME: ""  # Optional: set for adhoc reruns
+  # DOTNET_RUNTIME: ""  # Optional: set for adhoc reruns
 
 # Secrets - API credentials for Power Service SDK
 secrets:

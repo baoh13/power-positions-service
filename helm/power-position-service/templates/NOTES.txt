@@ -19,9 +19,9 @@ Storage Configuration:
 
 Extraction Interval: Every {{ .Values.powerPositionSettings.intervalMinutes }} minutes
 
-{{- if .Values.env.POWER_POSITION_RUNTIME }}
+{{- if .Values.env.DOTNET_RUNTIME }}
 ⚠️  ADHOC RERUN MODE ENABLED
-Runtime Override: {{ .Values.env.POWER_POSITION_RUNTIME }}
+Runtime Override: {{ .Values.env.DOTNET_RUNTIME }}
 {{- end }}
 
 For production operations, see the deployment guide.

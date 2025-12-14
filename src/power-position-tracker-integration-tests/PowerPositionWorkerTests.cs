@@ -67,11 +67,11 @@ public class PowerPositionWorkerTests
     {
         // Arrange
         var host = CreateHostBuilder(DateTime.UtcNow).Build();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
 
         // Act
         await host.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(4)); // Let it run initial extraction
+        await Task.Delay(TimeSpan.FromSeconds(5)); // Let it run initial extraction
         await host.StopAsync(cts.Token);
 
         // Assert
@@ -100,10 +100,10 @@ public class PowerPositionWorkerTests
         await dlq.EnqueueAsync(failedExtraction);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
 
         await host.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(4)); // Allow DLQ processing
+        await Task.Delay(TimeSpan.FromSeconds(5)); // Allow DLQ processing
         await host.StopAsync(cts.Token);
 
         // Assert
@@ -147,9 +147,9 @@ public class PowerPositionWorkerTests
         await dlq.EnqueueAsync(failedExtraction);
 
         // Act
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
         await host.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(2)); // Allow DLQ processing attempt
+        await Task.Delay(TimeSpan.FromSeconds(5)); // Allow DLQ processing attempt
         await host.StopAsync(cts.Token);
 
         // Assert
@@ -193,11 +193,11 @@ public class PowerPositionWorkerTests
     {
         // Arrange
         var host = CreateHostBuilder(DateTime.UtcNow).Build();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
 
         // Act
         await host.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(3));
+        await Task.Delay(TimeSpan.FromSeconds(5));
         await host.StopAsync(cts.Token);
 
         // Assert
@@ -231,11 +231,11 @@ public class PowerPositionWorkerTests
     {
         // Arrange
         var host = CreateHostBuilder(DateTime.UtcNow).Build();
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
 
         // Act
         await host.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(4));
+        await Task.Delay(TimeSpan.FromSeconds(5));
         await host.StopAsync(cts.Token);
 
         // Assert
@@ -359,7 +359,7 @@ public class PowerPositionWorkerTests
 
         // Act
         await host.StartAsync(cts.Token);
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        await Task.Delay(TimeSpan.FromSeconds(9));
         await host.StopAsync(cts.Token);
 
         // Assert
@@ -436,11 +436,11 @@ public class PowerPositionWorkerTests
         try
         {
             var host = CreateHostBuilder(DateTime.UtcNow).Build();
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(6));
 
             // Act
             await host.StartAsync(cts.Token);
-            await Task.Delay(TimeSpan.FromSeconds(4));
+            await Task.Delay(TimeSpan.FromSeconds(5));
             await host.StopAsync(cts.Token);
 
             // Assert

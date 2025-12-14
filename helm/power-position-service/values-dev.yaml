@@ -43,4 +43,4 @@ nodeSelector: {}
 
 # Add this to avoid nil .Values.env in templates
 env:
-  POWER_POSITION_RUNTIME: ""
+  DOTNET_RUNTIME: ""

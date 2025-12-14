@@ -86,9 +86,9 @@ spec:
               name: {{ include "power-position-service.fullname" . }}
               key: loggingLevel
         {{- with .Values.env }}
-        {{- if .POWER_POSITION_RUNTIME }}
+        {{- if .DOTNET_RUNTIME }}
         - name: DOTNET_RUNTIME
-          value: {{ .POWER_POSITION_RUNTIME | quote }}
+          value: {{ .DOTNET_RUNTIME | quote }}
         {{- end }}
         {{- end }}
         # Secret environment variables
